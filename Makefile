@@ -44,13 +44,13 @@ ch_clear:
 	docker exec -ti xk6_output_clickhouse clickhouse-client -q "DROP TABLE IF EXISTS k6_samples"
 
 integrations:
-	K6_OUT="clickhouse=http://localhost:8123/default?dial_timeout=200ms&max_execution_time=60" ./k6 run tests/http.js -v
+	K6_CLICKHOUSE_PARAMS="USERS_1H_0=10 USERS_7D_0=1" K6_OUT="clickhouse=http://localhost:8123/default?dial_timeout=200ms&max_execution_time=60" ./k6 run tests/http.js -v
 
 dump:
-	echo "tests id                        name"
-	docker exec -ti xk6_output_clickhouse clickhouse-client -q "SELECT id, name FROM k6_tests"
+	echo "tests id                        name                            params"
+	docker exec -ti xk6_output_clickhouse clickhouse-client -q "SELECT id, name, params FROM k6_tests"
 	echo
-	echo "samples"
+	echo "samples                         count"
 	docker exec -ti xk6_output_clickhouse clickhouse-client -q "SELECT id, count(1) AS samples FROM k6_samples GROUP BY id"
 
 .PHONY: build clean format help test

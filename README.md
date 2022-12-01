@@ -44,7 +44,8 @@ ORDER BY (id, ts, metric, name);
 
 CREATE TABLE IF NOT EXISTS k6_tests (
     id DateTime64(9, 'UTC'),
-    name String
+    name String,
+    params String
 ) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/k6_tests', '{replica}', id)
 PARTITION BY toYYYYMM(id)
 ORDER BY (name, id);
@@ -70,7 +71,8 @@ ORDER BY (id, ts, metric, name);
 
 CREATE TABLE IF NOT EXISTS k6_tests (
     id DateTime64(9, 'UTC'),
-    name String
+    name String,
+    params String
 ) ENGINE = ReplacingMergeTree(id)
 PARTITION BY toYYYYMM(id)
 ORDER BY (name, id);

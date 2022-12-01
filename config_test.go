@@ -17,14 +17,16 @@ func Test_getConsolidatedConfig_Succeeds(t *testing.T) {
 		map[string]string{
 			"K6_CLICKHOUSE_PUSH_INTERVAL": "2s",
 			"K6_CLICKHOUSE_NAME":          "test",
+			"K6_CLICKHOUSE_PARAMS":        "USERS_1H_0=10 USERS_7D_0=1",
 		})
 	require.NoError(t, err)
 	assert.Equal(t, config{
 		URL:          "http://127.0.0.1:8124/k6?dial_timeout=200ms&max_execution_time=60",
 		PushInterval: Duration(2 * time.Second),
 		Name:         "test",
-		dbName:       "k6",
 		id:           time.Unix(1669909784, 10),
+		dbName:       "k6",
+		params:       "USERS_1H_0=10 USERS_7D_0=1",
 	}, actualConfig)
 }
 

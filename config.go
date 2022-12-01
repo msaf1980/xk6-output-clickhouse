@@ -47,6 +47,7 @@ type config struct {
 	Name         string   `json:"name"`
 	dbName       string
 	id           time.Time
+	params       string
 }
 
 func newConfig() config {
@@ -124,6 +125,7 @@ func getConsolidatedConfig(jsonRawConf json.RawMessage, env map[string]string) (
 	} else {
 		consolidatedConf.Name = name
 	}
+	consolidatedConf.params = env["K6_CLICKHOUSE_PARAMS"]
 
 	return consolidatedConf, nil
 }

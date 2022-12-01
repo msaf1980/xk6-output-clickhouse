@@ -92,7 +92,8 @@ var schema = []string{
     ORDER BY (id, ts, metric, name);`,
 	`CREATE TABLE IF NOT EXISTS k6_tests (
         id DateTime64(9, 'UTC'),
-        name String
+        name String,
+		params String
 	) ENGINE = ReplacingMergeTree(id)
     PARTITION BY toYYYYMM(id)
     ORDER BY (name, id);`,
@@ -112,7 +113,7 @@ func (o *Output) Start() error {
 			return err
 		}
 	}
-	if _, err = o.Conn.Exec("INSERT INTO k6_tests (id, name) VALUES (?, ?)", o.Config.id.UnixNano(), o.Config.Name); err != nil {
+	if _, err = o.Conn.Exec("INSERT INTO k6_tests (id, name, params) VALUES (?, ?, ?)", o.Config.id.UnixNano(), o.Config.Name, o.Config.params); err != nil {
 		o.logger.WithError(err).Debug("Start: Failed to insert test")
 		return err
 	}
