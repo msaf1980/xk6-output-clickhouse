@@ -97,7 +97,7 @@ var schema = []string{
         name String
 	) ENGINE = ReplacingMergeTree(id)
     PARTITION BY toYYYYMM(id)
-    ORDER BY (id);`,
+    ORDER BY (name, id);`,
 }
 
 func (o *Output) Start() error {

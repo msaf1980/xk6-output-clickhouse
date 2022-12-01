@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS k6_tests (
     name String
 ) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/k6_tests', '{replica}', id)
 PARTITION BY toYYYYMM(id)
-ORDER BY (id);
+ORDER BY (name, id);
 ```
 
 If no tables at start, atotomatic create database and non-replicated schema, like this
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS k6_tests (
     name String
 ) ENGINE = ReplacingMergeTree(id)
 PARTITION BY toYYYYMM(id)
-ORDER BY (id);
+ORDER BY (name, id);
 ```
 
 # Configuration
