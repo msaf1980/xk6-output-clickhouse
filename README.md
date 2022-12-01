@@ -38,14 +38,14 @@ CREATE TABLE IF NOT EXISTS k6_samples (
     tags Map(String, String),
     value Float64,
     version DateTime64(9)
-) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/graphite_index', '{replica}', version)
+) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/k6_samples', '{replica}', version)
 PARTITION BY toYYYYMM(id)
 ORDER BY (id, ts, metric, name);
 
 CREATE TABLE IF NOT EXISTS k6_tests (
     id DateTime64(9),
     name String
-) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/graphite_index', '{replica}', id)
+) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/k6_tests', '{replica}', id)
 PARTITION BY toYYYYMM(id)
 ORDER BY (id);
 ```
