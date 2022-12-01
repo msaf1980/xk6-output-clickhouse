@@ -1,0 +1,51 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - '**'
+name: tests
+env:
+  GO111MODULE: on
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version:
+          # support the two most recent major go versions
+          - 1.x
+          - 1.18.x
+        platform: [ubuntu-22.04]
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+
+      - name: Run unit tests
+        run: go test ./...
+
+      - name: Install xk6
+        run: go install go.k6.io/xk6/cmd/xk6@latest
+
+      - name: Build xk6
+        run: xk6 build --with github.com/msaf1980/xk6-output-clickhouse=.
+
+      - name: Run Clickhouse
+        run: make ch
+
+      - name: Sleep some
+        run: sleep 1
+
+      - name: Run intergration tests
+        run: make integrations
+
+      # Error: the input device is not a TTY
+      # - name: Dump intergration tests records
+      #   run: make dump 2>&1 > dump.txt && cat dump.txt
