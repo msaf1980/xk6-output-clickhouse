@@ -40,8 +40,12 @@ jobs:
       - name: Run Clickhouse
         run: make ch
 
+      - name: Sleep some
+        run: sleep 1
+
       - name: Run intergration tests
         run: make integrations
 
-      - name: Dump intergration tests records
-        run: make dump
+      # Error: the input device is not a TTY
+      # - name: Dump intergration tests records
+      #   run: make dump 2>&1 > dump.txt && cat dump.txt
