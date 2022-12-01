@@ -1,4 +1,4 @@
-module github.com/grafana/xk6-output-clickhouse
+module github.com/msaf1980/xk6-output-clickhouse
 
 go 1.16
 
