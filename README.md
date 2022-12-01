@@ -103,4 +103,4 @@ K6_OUT="clickhouse=http://k6:k6@localhost:8123/k6?dial_timeout=200ms&max_executi
 The `xk6-output-clickhouse` extension supports this additional option:
 
 - `K6_CLICKHOUSE_PUSH_INTERVAL`: to define how often metrics are sent to clickhouse.  The default value is `10s` (10 second).
-- `K6_CLICKHOUSE_TESTNAME`: to set test name instead of id usage (formated start timestamp).
+- `K6_CLICKHOUSE_TESTNAME`: to set test name prefix prepended to id (formated start timestamp).

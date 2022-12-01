@@ -118,6 +118,8 @@ func (o *Output) Start() error {
 	name := os.Getenv("K6_CLICKHOUSE_TESTNAME")
 	if name == "" {
 		name = o.id.Format(time.RFC3339Nano)
+	} else {
+		name = name + " " + o.id.Format(time.RFC3339Nano)
 	}
 	if _, err = o.Conn.Exec("INSERT INTO k6_tests (id, name) VALUES (?, ?)", o.id, name); err != nil {
 		o.logger.WithError(err).Debug("Start: Failed to insert test")
