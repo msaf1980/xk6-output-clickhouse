@@ -39,6 +39,10 @@ ch:
 ch_stop:
 	docker stop xk6_output_clickhouse
 
+ch_clear:
+	docker exec -ti xk6_output_clickhouse clickhouse-client -q "DROP TABLE IF EXISTS k6_tests"
+	docker exec -ti xk6_output_clickhouse clickhouse-client -q "DROP TABLE IF EXISTS k6_samples"
+
 integrations:
 	K6_OUT="clickhouse=http://localhost:8123/default?dial_timeout=200ms&max_execution_time=60" ./k6 run tests/http.js -v
 
@@ -47,6 +51,6 @@ dump:
 	docker exec -ti xk6_output_clickhouse clickhouse-client -q "SELECT id, name FROM k6_tests"
 	echo
 	echo "samples"
-	docker exec -ti xk6_output_clickhouse clickhouse-client -q "SELECT count(1) AS samples FROM k6_samples"
+	docker exec -ti xk6_output_clickhouse clickhouse-client -q "SELECT id, count(1) AS samples FROM k6_samples GROUP BY id"
 
 .PHONY: build clean format help test

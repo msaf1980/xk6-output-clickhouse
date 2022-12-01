@@ -31,8 +31,8 @@ USE k6
 Create replicated schema
 ```
 CREATE TABLE IF NOT EXISTS k6_samples (
-    id DateTime64(9),
-    ts DateTime64(9),
+    id DateTime64(9, 'UTC'),
+    ts DateTime64(9, 'UTC'),
     metric String,
     name String,
     tags Map(String, String),
@@ -43,7 +43,7 @@ PARTITION BY toYYYYMM(id)
 ORDER BY (id, ts, metric, name);
 
 CREATE TABLE IF NOT EXISTS k6_tests (
-    id DateTime64(9),
+    id DateTime64(9, 'UTC'),
     name String
 ) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/k6_tests', '{replica}', id)
 PARTITION BY toYYYYMM(id)
@@ -57,8 +57,8 @@ CREATE DATABASE IF NOT EXISTS k6
 USE k6
 
 CREATE TABLE IF NOT EXISTS k6_samples (
-    id DateTime64(9),
-    ts DateTime64(9),
+    id DateTime64(9, 'UTC'),
+    ts DateTime64(9, 'UTC'),
     metric String,
     name String,
     tags Map(String, String),
@@ -69,7 +69,7 @@ PARTITION BY toYYYYMM(id)
 ORDER BY (id, ts, metric, name);
 
 CREATE TABLE IF NOT EXISTS k6_tests (
-    id DateTime64(9),
+    id DateTime64(9, 'UTC'),
     name String
 ) ENGINE = ReplacingMergeTree(id)
 PARTITION BY toYYYYMM(id)

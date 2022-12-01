@@ -3,7 +3,6 @@ package timescaledb
 import (
 	"database/sql"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"time"
@@ -19,8 +18,8 @@ func init() {
 }
 
 var (
-	_       interface{ output.WithThresholds } = &Output{}
-	timeNow                                    = time.Now
+	// _       interface{ output.WithThresholds } = &Output{}
+	timeNow = time.Now
 )
 
 type Output struct {
@@ -28,7 +27,6 @@ type Output struct {
 	periodicFlusher *output.PeriodicFlusher
 	Conn            *sql.DB
 	Config          config
-	id              time.Time
 
 	thresholds map[string][]*dbThreshold
 
@@ -82,18 +80,18 @@ type dbThreshold struct {
 
 var schema = []string{
 	`CREATE TABLE IF NOT EXISTS k6_samples (
-        id DateTime64(9),
-        ts DateTime64(9),
+        id DateTime64(9, 'UTC'),
+        ts DateTime64(9, 'UTC'),
         metric String,
         name String,
         tags Map(String, String),
         value Float64,
-        version DateTime64(9)
+        version DateTime64(9, 'UTC')
     ) ENGINE = ReplacingMergeTree(version)
     PARTITION BY toYYYYMM(id)
     ORDER BY (id, ts, metric, name);`,
 	`CREATE TABLE IF NOT EXISTS k6_tests (
-        id DateTime64(9),
+        id DateTime64(9, 'UTC'),
         name String
 	) ENGINE = ReplacingMergeTree(id)
     PARTITION BY toYYYYMM(id)
@@ -114,14 +112,7 @@ func (o *Output) Start() error {
 			return err
 		}
 	}
-	o.id = timeNow()
-	name := os.Getenv("K6_CLICKHOUSE_TESTNAME")
-	if name == "" {
-		name = o.id.Format(time.RFC3339Nano)
-	} else {
-		name = name + " " + o.id.Format(time.RFC3339Nano)
-	}
-	if _, err = o.Conn.Exec("INSERT INTO k6_tests (id, name) VALUES (?, ?)", o.id, name); err != nil {
+	if _, err = o.Conn.Exec("INSERT INTO k6_tests (id, name) VALUES (?, ?)", o.Config.id.UnixNano(), o.Config.Name); err != nil {
 		o.logger.WithError(err).Debug("Start: Failed to insert test")
 		return err
 	}
@@ -169,7 +160,7 @@ func (o *Output) flushMetrics() {
 		for _, s := range samples {
 			tags := s.Tags.Map()
 			name := tagsName(tags)
-			if _, err = batch.Exec(start, s.Time, s.Metric.Name, name, tags, s.Value, o.id); err != nil {
+			if _, err = batch.Exec(o.Config.id, s.Time, s.Metric.Name, name, tags, s.Value, start.UTC()); err != nil {
 				o.logger.Error(err)
 				scope.Rollback()
 				return

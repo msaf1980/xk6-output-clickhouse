@@ -46,6 +46,7 @@ type config struct {
 	PushInterval Duration `json:"pushInterval"`
 	Name         string   `json:"name"`
 	dbName       string
+	id           time.Time
 }
 
 func newConfig() config {
@@ -114,8 +115,13 @@ func getConsolidatedConfig(jsonRawConf json.RawMessage, env map[string]string) (
 		}
 	}
 
-	name, ok := env["K6_CLICKHOUSE_NAME"]
-	if ok {
+	name := env["K6_CLICKHOUSE_NAME"]
+	consolidatedConf.id = timeNow()
+	if name == "" {
+		nsec := consolidatedConf.id.UnixNano() % 1e9
+		u := consolidatedConf.id.UTC()
+		consolidatedConf.Name = u.Format("2006-01-02T15:04:05") + fmt.Sprintf(".%09d", nsec) + u.Format("Z")
+	} else {
 		consolidatedConf.Name = name
 	}
 
