@@ -115,7 +115,7 @@ func (o *Output) Start() error {
 		}
 	}
 	o.id = timeNow()
-	name := os.Getenv("K6_TESTNAME")
+	name := os.Getenv("K6_CLICKHOUSE_TESTNAME")
 	if name == "" {
 		name = o.id.Format(time.RFC3339Nano)
 	}
