@@ -24,7 +24,8 @@ func Test_getConsolidatedConfig_Succeeds(t *testing.T) {
 		URL:          "http://127.0.0.1:8124/k6?dial_timeout=200ms&max_execution_time=60",
 		PushInterval: Duration(2 * time.Second),
 		Name:         "test",
-		id:           time.Unix(1669909784, 10),
+		id:           uint64(time.Unix(1669909784, 10).UnixNano()),
+		ts:           time.Unix(1669909784, 10).UTC(),
 		dbName:       "k6",
 		params:       "USERS_1H_0=10 USERS_7D_0=1",
 	}, actualConfig)
@@ -42,7 +43,8 @@ func Test_getConsolidatedConfig_FromJsonAndPopulatesConfigFieldsFromJsonUrl(t *t
 		URL:          "http://127.0.0.1:8124/default?dial_timeout=200ms&max_execution_time=60",
 		PushInterval: Duration(10 * time.Second),
 		Name:         "2022-12-01T15:49:44.000000010Z",
-		id:           time.Unix(1669909784, 10),
+		id:           uint64(time.Unix(1669909784, 10).UnixNano()),
+		ts:           time.Unix(1669909784, 10).UTC(),
 		dbName:       "default",
 	}, actualConfig)
 }
@@ -62,7 +64,8 @@ func Test_getConsolidatedConfig_FromEnvVariables(t *testing.T) {
 		URL:          "http://localhost:8123/default?dial_timeout=200ms&max_execution_time=60",
 		PushInterval: Duration(2 * time.Second),
 		Name:         "2022-12-01T15:49:44.000000010Z",
-		id:           time.Unix(1669909784, 10),
+		id:           uint64(time.Unix(1669909784, 10).UnixNano()),
+		ts:           time.Unix(1669909784, 10).UTC(),
 		dbName:       "default",
 	}, actualConfig)
 }
@@ -82,7 +85,8 @@ func Test_getConsolidatedConfig_EnvVariableTakesPrecedenceWithoutConfigArg(t *te
 		URL:          "http://user:password@127.0.0.1:8124/default?dial_timeout=200ms&max_execution_time=60",
 		PushInterval: Duration(2 * time.Second),
 		Name:         "2022-12-01T15:49:44.000000010Z",
-		id:           time.Unix(1669909784, 10),
+		id:           uint64(time.Unix(1669909784, 10).UnixNano()),
+		ts:           time.Unix(1669909784, 10).UTC(),
 		dbName:       "default",
 	}, actualConfig)
 }

@@ -80,7 +80,8 @@ type dbThreshold struct {
 
 var schema = []string{
 	`CREATE TABLE IF NOT EXISTS k6_samples (
-        id DateTime64(9, 'UTC'),
+        id UInt64,
+		start DateTime64(9, 'UTC'),
         ts DateTime64(9, 'UTC'),
         metric String,
         name String,
@@ -88,15 +89,16 @@ var schema = []string{
         value Float64,
         version DateTime64(9, 'UTC')
     ) ENGINE = ReplacingMergeTree(version)
-    PARTITION BY toYYYYMM(id)
-    ORDER BY (id, ts, metric, name);`,
+    PARTITION BY toYYYYMM(start)
+    ORDER BY (id, start, metric, name);`,
 	`CREATE TABLE IF NOT EXISTS k6_tests (
-        id DateTime64(9, 'UTC'),
+        id UInt64,
+		ts DateTime64(9, 'UTC'),
         name String,
 		params String
-	) ENGINE = ReplacingMergeTree(id)
-    PARTITION BY toYYYYMM(id)
-    ORDER BY (name, id);`,
+	) ENGINE = ReplacingMergeTree(ts)
+    PARTITION BY toYYYYMM(ts)
+    ORDER BY (id, ts, name);`,
 }
 
 func (o *Output) Start() error {
@@ -113,7 +115,7 @@ func (o *Output) Start() error {
 			return err
 		}
 	}
-	if _, err = o.Conn.Exec("INSERT INTO k6_tests (id, name, params) VALUES (?, ?, ?)", o.Config.id.UnixNano(), o.Config.Name, o.Config.params); err != nil {
+	if _, err = o.Conn.Exec("INSERT INTO k6_tests (id, ts, name, params) VALUES (?, ?, ?, ?)", o.Config.id, o.Config.ts, o.Config.Name, o.Config.params); err != nil {
 		o.logger.WithError(err).Debug("Start: Failed to insert test")
 		return err
 	}
@@ -161,7 +163,7 @@ func (o *Output) flushMetrics() {
 		for _, s := range samples {
 			tags := s.Tags.Map()
 			name := tagsName(tags)
-			if _, err = batch.Exec(o.Config.id, s.Time, s.Metric.Name, name, tags, s.Value, start.UTC()); err != nil {
+			if _, err = batch.Exec(o.Config.id, s.Time.UTC(), s.Metric.Name, name, tags, s.Value, start.UTC()); err != nil {
 				o.logger.Error(err)
 				scope.Rollback()
 				return
