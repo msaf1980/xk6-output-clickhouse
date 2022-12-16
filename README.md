@@ -31,7 +31,8 @@ USE k6
 Create replicated schema
 ```
 CREATE TABLE IF NOT EXISTS k6_samples (
-    id DateTime64(9, 'UTC'),
+    id UInt64,
+    start DateTime64(9, 'UTC'),
     ts DateTime64(9, 'UTC'),
     metric String,
     name String,
@@ -39,16 +40,17 @@ CREATE TABLE IF NOT EXISTS k6_samples (
     value Float64,
     version DateTime64(9)
 ) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/k6_samples', '{replica}', version)
-PARTITION BY toYYYYMM(id)
-ORDER BY (id, ts, metric, name);
+PARTITION BY toYYYYMM(start)
+ORDER BY (id, start, metric, name);
 
 CREATE TABLE IF NOT EXISTS k6_tests (
-    id DateTime64(9, 'UTC'),
+    id UInt64,
+    ts DateTime64(9, 'UTC'),
     name String,
     params String
 ) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/k6_tests', '{replica}', id)
-PARTITION BY toYYYYMM(id)
-ORDER BY (name, id);
+PARTITION BY toYYYYMM(ts)
+ORDER BY (id, ts, name);
 ```
 
 If no tables at start, atotomatic create database and non-replicated schema, like this
@@ -58,7 +60,8 @@ CREATE DATABASE IF NOT EXISTS k6
 USE k6
 
 CREATE TABLE IF NOT EXISTS k6_samples (
-    id DateTime64(9, 'UTC'),
+    id UInt64,
+    start DateTime64(9, 'UTC'),
     ts DateTime64(9, 'UTC'),
     metric String,
     name String,
@@ -66,16 +69,17 @@ CREATE TABLE IF NOT EXISTS k6_samples (
     value Float64,
     version DateTime64(9)
 ) ENGINE = ReplacingMergeTree(version)
-PARTITION BY toYYYYMM(id)
-ORDER BY (id, ts, metric, name);
+PARTITION BY toYYYYMM(start)
+ORDER BY (id, start, metric, name);
 
 CREATE TABLE IF NOT EXISTS k6_tests (
-    id DateTime64(9, 'UTC'),
+    id UInt64,
+    ts DateTime64(9, 'UTC'),
     name String,
     params String
-) ENGINE = ReplacingMergeTree(id)
-PARTITION BY toYYYYMM(id)
-ORDER BY (name, id);
+) ENGINE = ReplacingMergeTree(ts)
+PARTITION BY toYYYYMM(ts)
+ORDER BY (id, ts, name);
 ```
 
 # Configuration
