@@ -42,7 +42,7 @@ func Test_getConsolidatedConfig_FromJsonAndPopulatesConfigFieldsFromJsonUrl(t *t
 	assert.Equal(t, config{
 		URL:          "http://127.0.0.1:8124/default?dial_timeout=200ms&max_execution_time=60",
 		PushInterval: Duration(10 * time.Second),
-		Name:         "2022-12-01T15:49:44.000000010Z",
+		Name:         "2022-12-01T15:49:44.00000001Z",
 		id:           uint64(time.Unix(1669909784, 10).UnixNano()),
 		ts:           time.Unix(1669909784, 10).UTC(),
 		dbName:       "default",
