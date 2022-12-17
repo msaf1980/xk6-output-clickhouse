@@ -121,9 +121,7 @@ func getConsolidatedConfig(jsonRawConf json.RawMessage, env map[string]string) (
 	consolidatedConf.ts = timeNow().UTC()
 	consolidatedConf.id = uint64(consolidatedConf.ts.UnixNano())
 	if name == "" {
-		nsec := consolidatedConf.ts.UnixNano() % 1e9
-		u := consolidatedConf.ts.UTC()
-		consolidatedConf.Name = u.Format("2006-01-02T15:04:05") + fmt.Sprintf(".%09d", nsec) + u.Format("Z")
+		consolidatedConf.Name = consolidatedConf.ts.Format(time.RFC3339Nano)
 	} else {
 		consolidatedConf.Name = name
 	}
