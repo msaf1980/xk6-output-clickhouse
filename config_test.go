@@ -63,7 +63,7 @@ func Test_getConsolidatedConfig_FromEnvVariables(t *testing.T) {
 	assert.Equal(t, config{
 		URL:          "http://localhost:8123/default?dial_timeout=200ms&max_execution_time=60",
 		PushInterval: Duration(2 * time.Second),
-		Name:         "2022-12-01T15:49:44.000000010Z",
+		Name:         "2022-12-01T15:49:44.00000001Z",
 		id:           uint64(time.Unix(1669909784, 10).UnixNano()),
 		ts:           time.Unix(1669909784, 10).UTC(),
 		dbName:       "default",
