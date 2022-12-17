@@ -72,7 +72,7 @@ func Test_getConsolidatedConfig_FromEnvVariables(t *testing.T) {
 
 func Test_getConsolidatedConfig_EnvVariableTakesPrecedenceWithoutConfigArg(t *testing.T) {
 	timeNow = func() time.Time {
-		return time.Unix(1669909784, 10)
+		return time.Unix(1669909784, 1)
 	}
 	actualConfig, err := getConsolidatedConfig(
 		[]byte(`{"url":"http://user:password@127.0.0.1:8124/default?dial_timeout=200ms&max_execution_time=60","pushInterval":"3s"}`),
@@ -84,9 +84,9 @@ func Test_getConsolidatedConfig_EnvVariableTakesPrecedenceWithoutConfigArg(t *te
 	assert.Equal(t, config{
 		URL:          "http://user:password@127.0.0.1:8124/default?dial_timeout=200ms&max_execution_time=60",
 		PushInterval: Duration(2 * time.Second),
-		Name:         "2022-12-01T15:49:44.000000010Z",
-		id:           uint64(time.Unix(1669909784, 10).UnixNano()),
-		ts:           time.Unix(1669909784, 10).UTC(),
+		Name:         "2022-12-01T15:49:44.000000001Z",
+		id:           uint64(time.Unix(1669909784, 1).UnixNano()),
+		ts:           time.Unix(1669909784, 1).UTC(),
 		dbName:       "default",
 	}, actualConfig)
 }
