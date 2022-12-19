@@ -35,13 +35,15 @@ CREATE TABLE IF NOT EXISTS k6_samples (
     start DateTime64(9, 'UTC'),
     ts DateTime64(9, 'UTC'),
     metric String,
+    url String,
+	label String,
     name String,
     tags Map(String, String),
     value Float64,
     version DateTime64(9)
 ) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/k6_samples', '{replica}', version)
 PARTITION BY toYYYYMM(start)
-ORDER BY (id, start, metric, name);
+ORDER BY (id, start, metric, url, label, name);
 
 CREATE TABLE IF NOT EXISTS k6_tests (
     id UInt64,
@@ -64,13 +66,15 @@ CREATE TABLE IF NOT EXISTS k6_samples (
     start DateTime64(9, 'UTC'),
     ts DateTime64(9, 'UTC'),
     metric String,
+    url String,
+	label String,
     name String,
     tags Map(String, String),
     value Float64,
     version DateTime64(9)
 ) ENGINE = ReplacingMergeTree(version)
 PARTITION BY toYYYYMM(start)
-ORDER BY (id, start, metric, name);
+ORDER BY (id, start, metric, url, label, name);
 
 CREATE TABLE IF NOT EXISTS k6_tests (
     id UInt64,

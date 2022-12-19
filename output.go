@@ -84,13 +84,15 @@ var schema = []string{
 		start DateTime64(9, 'UTC'),
         ts DateTime64(9, 'UTC'),
         metric String,
+		url String,
+		label String,
         name String,
         tags Map(String, String),
         value Float64,
         version DateTime64(9, 'UTC')
     ) ENGINE = ReplacingMergeTree(version)
     PARTITION BY toYYYYMM(start)
-    ORDER BY (id, start, metric, name);`,
+    ORDER BY (id, start, metric, url, label, name);`,
 	`CREATE TABLE IF NOT EXISTS k6_tests (
         id UInt64,
 		ts DateTime64(9, 'UTC'),
@@ -152,7 +154,7 @@ func (o *Output) flushMetrics() {
 		o.logger.Error(err)
 		return
 	}
-	batch, err := scope.Prepare(`INSERT INTO k6_samples (id, ts, metric, name, tags, value, version)`)
+	batch, err := scope.Prepare(`INSERT INTO k6_samples (id, ts, metric, url, label, name, tags, value, version)`)
 	if err != nil {
 		o.logger.Error(err)
 		return
@@ -163,7 +165,9 @@ func (o *Output) flushMetrics() {
 		for _, s := range samples {
 			tags := s.Tags.Map()
 			name := tagsName(tags)
-			if _, err = batch.Exec(o.Config.id, s.Time.UTC(), s.Metric.Name, name, tags, s.Value, start.UTC()); err != nil {
+			url := tags["url"]
+			label := tags["label"]
+			if _, err = batch.Exec(o.Config.id, s.Time.UTC(), s.Metric.Name, url, label, name, tags, s.Value, start.UTC()); err != nil {
 				o.logger.Error(err)
 				scope.Rollback()
 				return
