@@ -86,13 +86,14 @@ var schema = []string{
         metric String,
 		url String,
 		label String,
+		status String,
         name String,
         tags Map(String, String),
         value Float64,
         version DateTime64(9, 'UTC')
     ) ENGINE = ReplacingMergeTree(version)
     PARTITION BY toYYYYMM(start)
-    ORDER BY (id, start, metric, url, label, name);`,
+    ORDER BY (id, start, metric, url, label, status, name);`,
 	`CREATE TABLE IF NOT EXISTS k6_tests (
         id UInt64,
 		ts DateTime64(9, 'UTC'),
