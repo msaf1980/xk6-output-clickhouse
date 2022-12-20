@@ -105,27 +105,27 @@ func getConsolidatedConfig(jsonRawConf json.RawMessage, env map[string]string) (
 		}
 	}
 
-	envPushInterval, ok := env["K6_CLICKHOUSE_PUSH_INTERVAL"]
+	envPushInterval, ok := env["K6_OUT_CLICKHOUSE_PUSH_INTERVAL"]
 	if ok {
 		var pushInterval Duration
 		err := pushInterval.Parse(envPushInterval)
 		if err != nil {
-			return config{}, fmt.Errorf("invalid K6_CLICKHOUSE_PUSH_INTERVAL: %w", err)
+			return config{}, fmt.Errorf("invalid K6_OUT_CLICKHOUSE_PUSH_INTERVAL: %w", err)
 		}
 		if consolidatedConf, err = consolidatedConf.apply(config{PushInterval: pushInterval}); err != nil {
-			return config{}, fmt.Errorf("problem apply config from K6_CLICKHOUSE_PUSH_INTERVAL: %w", err)
+			return config{}, fmt.Errorf("problem apply config from K6_OUT_CLICKHOUSE_PUSH_INTERVAL: %w", err)
 		}
 	}
 
-	name := env["K6_CLICKHOUSE_NAME"]
+	name := env["K6_OUT_CLICKHOUSE_TESTNAME"]
 	consolidatedConf.ts = timeNow().UTC()
 	consolidatedConf.id = uint64(consolidatedConf.ts.UnixNano())
 	if name == "" {
 		consolidatedConf.Name = consolidatedConf.ts.Format(time.RFC3339Nano)
 	} else {
-		consolidatedConf.Name = name
+		consolidatedConf.Name = name + " " + consolidatedConf.ts.Format(time.RFC3339Nano)
 	}
-	consolidatedConf.params = env["K6_CLICKHOUSE_PARAMS"]
+	consolidatedConf.params = env["K6_OUT_CLICKHOUSE_PARAMS"]
 
 	return consolidatedConf, nil
 }
