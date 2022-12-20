@@ -15,15 +15,15 @@ func Test_getConsolidatedConfig_Succeeds(t *testing.T) {
 	actualConfig, err := getConsolidatedConfig(
 		[]byte(`{"url":"http://127.0.0.1:8124/k6?dial_timeout=200ms&max_execution_time=60","pushInterval":"3s"}`),
 		map[string]string{
-			"K6_CLICKHOUSE_PUSH_INTERVAL": "2s",
-			"K6_CLICKHOUSE_NAME":          "test",
-			"K6_CLICKHOUSE_PARAMS":        "USERS_1H_0=10 USERS_7D_0=1",
+			"K6_OUT_CLICKHOUSE_PUSH_INTERVAL": "2s",
+			"K6_OUT_CLICKHOUSE_TESTNAME":      "test",
+			"K6_OUT_CLICKHOUSE_PARAMS":        "USERS_1H_0=10 USERS_7D_0=1",
 		})
 	require.NoError(t, err)
 	assert.Equal(t, config{
 		URL:          "http://127.0.0.1:8124/k6?dial_timeout=200ms&max_execution_time=60",
 		PushInterval: Duration(2 * time.Second),
-		Name:         "test",
+		Name:         "test 2022-12-01T15:49:44.00000001Z",
 		id:           uint64(time.Unix(1669909784, 10).UnixNano()),
 		ts:           time.Unix(1669909784, 10).UTC(),
 		dbName:       "k6",
@@ -56,7 +56,7 @@ func Test_getConsolidatedConfig_FromEnvVariables(t *testing.T) {
 	actualConfig, err := getConsolidatedConfig(
 		nil,
 		map[string]string{
-			"K6_CLICKHOUSE_PUSH_INTERVAL": "2s",
+			"K6_OUT_CLICKHOUSE_PUSH_INTERVAL": "2s",
 		})
 
 	assert.NoError(t, err)
@@ -77,7 +77,7 @@ func Test_getConsolidatedConfig_EnvVariableTakesPrecedenceWithoutConfigArg(t *te
 	actualConfig, err := getConsolidatedConfig(
 		[]byte(`{"url":"http://user:password@127.0.0.1:8124/default?dial_timeout=200ms&max_execution_time=60","pushInterval":"3s"}`),
 		map[string]string{
-			"K6_CLICKHOUSE_PUSH_INTERVAL": "2s",
+			"K6_OUT_CLICKHOUSE_PUSH_INTERVAL": "2s",
 		})
 
 	assert.NoError(t, err)
