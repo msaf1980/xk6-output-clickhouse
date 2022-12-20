@@ -93,7 +93,7 @@ var schema = []string{
         version DateTime64(9, 'UTC')
     ) ENGINE = ReplacingMergeTree(version)
     PARTITION BY toYYYYMM(start)
-    ORDER BY (id, start, metric, url, label, status, name);`,
+    ORDER BY (id, start, ts, metric, url, label, status, name);`,
 	`CREATE TABLE IF NOT EXISTS k6_tests (
         id UInt64,
 		ts DateTime64(9, 'UTC'),
