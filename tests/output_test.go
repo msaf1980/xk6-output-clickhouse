@@ -42,9 +42,9 @@ func diffSamples(expected, actual []sample) string {
 	var sb strings.Builder
 	sb.Grow(1024)
 	for i := 0; i < maxLen; i++ {
-		if i > len(expected) {
+		if i >= len(expected) {
 			sb.WriteString(fmt.Sprintf("+ [%d] = %+v\n", i, actual[i]))
-		} else if i > len(actual) {
+		} else if i >= len(actual) {
 			sb.WriteString(fmt.Sprintf("- [%d] = %+v\n", i, expected[i]))
 		} else if !reflect.DeepEqual(actual[i], expected[i]) {
 			sb.WriteString(fmt.Sprintf("- [%d] = %+v\n", i, expected[i]))
