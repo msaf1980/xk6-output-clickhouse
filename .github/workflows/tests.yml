@@ -29,7 +29,7 @@ jobs:
           cache: true
 
       - name: Run unit tests
-        run: go test ./...
+        run: make test
 
       - name: Install xk6
         run: go install go.k6.io/xk6/cmd/xk6@latest
@@ -38,7 +38,7 @@ jobs:
         run: xk6 build --with github.com/msaf1980/xk6-output-clickhouse=.
 
       - name: Run Clickhouse
-        run: make ch
+        run: make up
 
       - name: Sleep some
         run: sleep 1
