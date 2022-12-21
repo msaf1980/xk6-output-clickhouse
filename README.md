@@ -40,9 +40,8 @@ CREATE TABLE IF NOT EXISTS k6_samples (
     status String,
     name String,
     tags Map(String, String),
-    value Float64,
-    version DateTime64(9)
-) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/k6_samples', '{replica}', version)
+    value Float64
+) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/k6_samples', '{replica}', start)
 PARTITION BY toYYYYMM(start)
 ORDER BY (id, start, ts, metric, url, label, status, name);
 
@@ -72,9 +71,8 @@ CREATE TABLE IF NOT EXISTS k6_samples (
     status String,
     name String,
     tags Map(String, String),
-    value Float64,
-    version DateTime64(9)
-) ENGINE = ReplacingMergeTree(version)
+    value Float64
+) ENGINE = ReplacingMergeTree(start)
 PARTITION BY toYYYYMM(start)
 ORDER BY (id, start, ts, metric, url, label, status, name);
 
@@ -116,3 +114,4 @@ The `xk6-output-clickhouse` extension supports this additional option:
 
 - `K6_OUT_CLICKHOUSE_PUSH_INTERVAL`: to define how often metrics are sent to clickhouse.  The default value is `10s` (10 second).
 - `K6_OUT_CLICKHOUSE_TESTNAME`: to set test name prefix prepended to id (formated start timestamp).
+- `K6_OUT_CLICKHOUSE_PARAMS`: to set test params.

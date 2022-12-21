@@ -1,4 +1,4 @@
-package timescaledb
+package clickhouse
 
 import (
 	"encoding/json"
@@ -46,6 +46,8 @@ type config struct {
 	PushInterval Duration `json:"pushInterval"`
 	Name         string   `json:"name"`
 	dbName       string
+	tableTests   string
+	tableSamples string
 	id           uint64
 	ts           time.Time
 	params       string
@@ -53,10 +55,29 @@ type config struct {
 
 func newConfig() config {
 	return config{
-		URL:          "http://localhost:8123/default?dial_timeout=200ms&max_execution_time=60",
+		URL: "http://localhost:8123/default?dial_timeout=1s&max_execution_time=60",
+		// URL:          "http://localhost:8123/default?read_timeout=10s&write_timeout=20s",
 		PushInterval: Duration(10 * time.Second),
 		dbName:       "default",
+		tableTests:   "k6_tests",
+		tableSamples: "k6_samples",
 	}
+}
+
+func (c config) TableTests() string {
+	return c.tableTests
+}
+
+func (c config) TableSamples() string {
+	return c.tableSamples
+}
+
+func (c config) Id() uint64 {
+	return c.id
+}
+
+func (c config) StartTime() time.Time {
+	return c.ts
 }
 
 func (c config) apply(modifiedConf config) (config, error) {
@@ -126,6 +147,16 @@ func getConsolidatedConfig(jsonRawConf json.RawMessage, env map[string]string) (
 		consolidatedConf.Name = name + " " + consolidatedConf.ts.Format(time.RFC3339Nano)
 	}
 	consolidatedConf.params = env["K6_OUT_CLICKHOUSE_PARAMS"]
+
+	tableTests := env["K6_OUT_CLICKHOUSE_TABLE_TESTS"]
+	if tableTests != "" {
+		consolidatedConf.tableTests = tableTests
+	}
+
+	tableSamples := env["K6_OUT_CLICKHOUSE_TABLE_SAMPLES"]
+	if tableSamples != "" {
+		consolidatedConf.tableSamples = tableSamples
+	}
 
 	return consolidatedConf, nil
 }

@@ -2,6 +2,12 @@ K6_VERSION ?= "v0.41.0"
 
 MAKEFLAGS += --silent
 
+CLICKHOUSE_VERSION ?= "clickhouse/clickhouse-server:latest"
+CLICKHOUSE_CONTAINER ?= "xk6_output_clickhouse"
+
+DOCKER ?= docker
+GO ?= go
+
 all: clean format test build
 
 ## help: Prints a list of available build targets.
@@ -27,30 +33,34 @@ build:
 
 ## format: Applies Go formatting to code.
 format:
-	go fmt ./...
+	${GO} fmt ./...
 
 ## test: Executes any unit tests.
 test:
-	go test -cover -race
+	${GO} test -cover -race ./...
 
-ch:
-	docker run -d -it --rm --name xk6_output_clickhouse -p 127.0.0.1:8123:8123 -p 127.0.0.1:9000:9000 clickhouse/clickhouse-server:latest
+up:
+	${DOCKER} run -d -it --rm --name "${CLICKHOUSE_CONTAINER}" -p 127.0.0.1:8123:8123 -p 127.0.0.1:9000:9000 ${CLICKHOUSE_VERSION}
 
-ch_stop:
-	docker stop xk6_output_clickhouse
+down:
+	${DOCKER} stop "${CLICKHOUSE_CONTAINER}"
 
-ch_clear:
-	docker exec -ti xk6_output_clickhouse clickhouse-client -q "DROP TABLE IF EXISTS k6_tests"
-	docker exec -ti xk6_output_clickhouse clickhouse-client -q "DROP TABLE IF EXISTS k6_samples"
+clear:
+	${DOCKER} exec -ti "${CLICKHOUSE_CONTAINER}" clickhouse-client -q "DROP TABLE IF EXISTS k6_tests"
+	${DOCKER} exec -ti "${CLICKHOUSE_CONTAINER}" clickhouse-client -q "DROP TABLE IF EXISTS k6_samples"
+
+cli:
+	${DOCKER} exec -it "${CLICKHOUSE_CONTAINER}" clickhouse-client
 
 integrations:
-	K6_CLICKHOUSE_PARAMS="USERS_1H_0=10 USERS_7D_0=1" K6_OUT="clickhouse=http://localhost:8123/default?dial_timeout=200ms&max_execution_time=60" ./k6 run tests/http.js -v
+	${GO} test -count=1 -tags=test_integration ./tests
+	K6_OUT_CLICKHOUSE_TABLE_TESTS="t_k6_tests" K6_OUT_CLICKHOUSE_TABLE_SAMPLES="t_k6_samples" K6_CLICKHOUSE_PARAMS="USERS_1H_0=10 USERS_7D_0=1" K6_OUT="clickhouse=http://localhost:8123/default?dial_timeout=200ms&max_execution_time=60" ./k6 run tests/http.js -v
 
 dump:
 	echo "tests id                        name                            params"
-	docker exec -ti xk6_output_clickhouse clickhouse-client -q "SELECT id, name, params FROM k6_tests"
+	${DOCKER} exec -ti "${CLICKHOUSE_CONTAINER}" clickhouse-client -q "SELECT id, name, params FROM t_k6_tests"
 	echo
 	echo "samples                         count"
-	docker exec -ti xk6_output_clickhouse clickhouse-client -q "SELECT id, count(1) AS samples FROM k6_samples GROUP BY id"
+	${DOCKER} exec -ti "${CLICKHOUSE_CONTAINER}" clickhouse-client -q "SELECT id, count(1) AS samples FROM t_k6_samples GROUP BY id"
 
 .PHONY: build clean format help test

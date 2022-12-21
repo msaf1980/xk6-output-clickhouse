@@ -1,4 +1,4 @@
-package timescaledb
+package clickhouse
 
 import (
 	"database/sql"
@@ -7,14 +7,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/sirupsen/logrus"
 
 	"go.k6.io/k6/metrics"
 	"go.k6.io/k6/output"
+
+	_ "github.com/mailru/go-clickhouse/v2"
 )
 
 func init() {
-	output.RegisterExtension("clickhouse", newOutput)
+	output.RegisterExtension("clickhouse", New)
 }
 
 var (
@@ -37,18 +40,19 @@ func (o *Output) Description() string {
 	return "Clickhouse"
 }
 
-func newOutput(params output.Params) (output.Output, error) {
+func New(params output.Params) (output.Output, error) {
 	config, err := getConsolidatedConfig(params.JSONConfig, params.Environment)
 	if err != nil {
 		return nil, fmt.Errorf("problem parsing config: %w", err)
 	}
 
 	conn, err := sql.Open("clickhouse", config.URL)
+	// conn, err := sql.Open("chhttp", config.URL)
 	if err != nil {
 		return nil, fmt.Errorf("clickhouse: unable to create connection: %w", err)
 	}
 
-	o := Output{
+	o := &Output{
 		Conn:   conn,
 		Config: config,
 		logger: params.Logger.WithFields(logrus.Fields{
@@ -56,7 +60,7 @@ func newOutput(params output.Params) (output.Output, error) {
 		}),
 	}
 
-	return &o, nil
+	return o, nil
 }
 
 func (o *Output) SetThresholds(thresholds map[string]metrics.Thresholds) {
@@ -78,32 +82,6 @@ type dbThreshold struct {
 	threshold *metrics.Threshold
 }
 
-var schema = []string{
-	`CREATE TABLE IF NOT EXISTS k6_samples (
-        id UInt64,
-		start DateTime64(9, 'UTC'),
-        ts DateTime64(9, 'UTC'),
-        metric String,
-		url String,
-		label String,
-		status String,
-        name String,
-        tags Map(String, String),
-        value Float64,
-        version DateTime64(9, 'UTC')
-    ) ENGINE = ReplacingMergeTree(version)
-    PARTITION BY toYYYYMM(start)
-    ORDER BY (id, start, ts, metric, url, label, status, name);`,
-	`CREATE TABLE IF NOT EXISTS k6_tests (
-        id UInt64,
-		ts DateTime64(9, 'UTC'),
-        name String,
-		params String
-	) ENGINE = ReplacingMergeTree(ts)
-    PARTITION BY toYYYYMM(ts)
-    ORDER BY (id, ts, name);`,
-}
-
 func (o *Output) Start() error {
 	sql := "CREATE DATABASE IF NOT EXISTS " + o.Config.dbName
 	_, err := o.Conn.Exec(sql)
@@ -111,14 +89,50 @@ func (o *Output) Start() error {
 		o.logger.WithError(err).WithField("sql", sql).Debug("Start: Couldn't create database; most likely harmless")
 	}
 
+	schema := []string{
+		`CREATE TABLE IF NOT EXISTS ` + o.Config.tableSamples + `(
+			id UInt64,
+			start DateTime64(9, 'UTC'),
+			ts DateTime64(9, 'UTC'),
+			metric String,
+			url String,
+			label String,
+			status String,
+			name String,
+			tags Map(String, String),
+			value Float64
+		) ENGINE = ReplacingMergeTree(start)
+		PARTITION BY toYYYYMM(start)
+		ORDER BY (id, start, ts, metric, url, label, status, name);`,
+		`CREATE TABLE IF NOT EXISTS ` + o.Config.tableTests + ` (
+			id UInt64,
+			ts DateTime64(9, 'UTC'),
+			name String,
+			params String
+		) ENGINE = ReplacingMergeTree(ts)
+		PARTITION BY toYYYYMM(ts)
+		ORDER BY (id, ts, name);`,
+	}
+
 	for _, s := range schema {
-		_, err = o.Conn.Exec(s)
-		if err != nil {
+		if _, err = o.Conn.Exec(s); err != nil {
 			o.logger.WithError(err).WithField("sql", s).Debug("Start: Couldn't create database schema; most likely harmless")
 			return err
 		}
 	}
-	if _, err = o.Conn.Exec("INSERT INTO k6_tests (id, ts, name, params) VALUES (?, ?, ?, ?)", o.Config.id, o.Config.ts, o.Config.Name, o.Config.params); err != nil {
+	_, err = o.Conn.Exec(
+		"INSERT INTO "+o.Config.tableTests+" (id, ts, name, params) VALUES (@Id, @Time, @Name, @Params)",
+		clickhouse.Named("Id", o.Config.id),
+		clickhouse.DateNamed("Time", o.Config.ts, clickhouse.NanoSeconds),
+		clickhouse.Named("Name", o.Config.Name),
+		clickhouse.Named("Params", o.Config.params),
+		// "INSERT INTO "+o.Config.tableTests+" (id, ts, name, params) VALUES ($1, $2, $3, $4)",
+		// o.Config.id,
+		// o.Config.ts,
+		// o.Config.Name,
+		// o.Config.params,
+	)
+	if err != nil {
 		o.logger.WithError(err).Debug("Start: Failed to insert test")
 		return err
 	}
@@ -134,7 +148,7 @@ func (o *Output) Start() error {
 	return nil
 }
 
-func tagsName(tags map[string]string) string {
+func TagsName(tags map[string]string) string {
 	tagsSlice := make([]string, 0, len(tags))
 	for k, v := range tags {
 		tagsSlice = append(tagsSlice, k+"="+v)
@@ -148,14 +162,16 @@ func (o *Output) flushMetrics() {
 	if len(samplesContainer) == 0 {
 		return
 	}
-	start := timeNow()
 
-	scope, err := o.Conn.Begin()
+	start := time.Now()
+
+	tx, err := o.Conn.Begin()
 	if err != nil {
 		o.logger.Error(err)
 		return
 	}
-	batch, err := scope.Prepare(`INSERT INTO k6_samples (id, ts, metric, url, label, name, tags, value, version)`)
+
+	stmt, err := tx.Prepare("INSERT INTO " + o.Config.tableSamples + " (id, start, ts, metric, url, label, status, name, tags, value)")
 	if err != nil {
 		o.logger.Error(err)
 		return
@@ -165,19 +181,18 @@ func (o *Output) flushMetrics() {
 		samples := sc.GetSamples()
 		for _, s := range samples {
 			tags := s.Tags.Map()
-			name := tagsName(tags)
+			name := TagsName(tags)
 			url := tags["url"]
 			label := tags["label"]
-			if _, err = batch.Exec(o.Config.id, s.Time.UTC(), s.Metric.Name, url, label, name, tags, s.Value, start.UTC()); err != nil {
+			status := tags["status"]
+			if _, err = stmt.Exec(o.Config.id, o.Config.ts, s.Time.UTC(), s.Metric.Name, url, label, status, name, tags, s.Value); err != nil {
 				o.logger.Error(err)
-				scope.Rollback()
 				return
 			}
 		}
 	}
 
-	err = scope.Commit()
-	if err != nil {
+	if err = tx.Commit(); err != nil {
 		o.logger.Error(err)
 		return
 	}
