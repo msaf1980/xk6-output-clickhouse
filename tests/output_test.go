@@ -131,7 +131,7 @@ func TestOutputFlushMetrics(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		metric, err := registry.NewMetric("test_gauge", metrics.Gauge)
 		require.NoError(t, err)
-		ts := out_ch.Config.StartTime().Add(time.Duration(i) * time.Second)
+		ts := out_ch.Config.StartTime().Add(time.Duration(i) * time.Nanosecond)
 		v := float64(i)
 		samples = append(samples, metrics.Sample{
 			TimeSeries: metrics.TimeSeries{
