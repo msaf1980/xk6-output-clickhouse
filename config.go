@@ -5,11 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 )
+
+func getEnv(key, defaultValue string) (v string) {
+	v = os.Getenv(key)
+	if v == "" {
+		v = defaultValue
+	}
+	return
+}
 
 type Duration time.Duration
 
@@ -42,25 +51,27 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 }
 
 type config struct {
-	URL          string   `json:"url"`
-	PushInterval Duration `json:"pushInterval"`
-	Name         string   `json:"name"`
-	dbName       string
-	tableTests   string
-	tableSamples string
-	id           uint64
-	ts           time.Time
-	params       string
+	URL             string   `json:"url"`
+	PushInterval    Duration `json:"pushInterval"`
+	Name            string   `json:"name"`
+	dbName          string
+	tableTests      string
+	tableSamples    string
+	tableThresholds string
+	id              uint64
+	ts              time.Time
+	params          string
 }
 
 func newConfig() config {
 	return config{
 		URL: "http://localhost:8123/default?dial_timeout=1s&max_execution_time=60",
 		// URL:          "http://localhost:8123/default?read_timeout=10s&write_timeout=20s",
-		PushInterval: Duration(10 * time.Second),
-		dbName:       "default",
-		tableTests:   "k6_tests",
-		tableSamples: "k6_samples",
+		PushInterval:    Duration(10 * time.Second),
+		dbName:          "default",
+		tableTests:      "k6_tests",
+		tableSamples:    "k6_samples",
+		tableThresholds: "k6_thresholds",
 	}
 }
 
@@ -148,15 +159,8 @@ func getConsolidatedConfig(jsonRawConf json.RawMessage, env map[string]string) (
 	}
 	consolidatedConf.params = env["K6_OUT_CLICKHOUSE_PARAMS"]
 
-	tableTests := env["K6_OUT_CLICKHOUSE_TABLE_TESTS"]
-	if tableTests != "" {
-		consolidatedConf.tableTests = tableTests
-	}
-
-	tableSamples := env["K6_OUT_CLICKHOUSE_TABLE_SAMPLES"]
-	if tableSamples != "" {
-		consolidatedConf.tableSamples = tableSamples
-	}
+	consolidatedConf.tableTests = getEnv("K6_OUT_CLICKHOUSE_TABLE_TESTS", consolidatedConf.tableTests)
+	consolidatedConf.tableSamples = getEnv("K6_OUT_CLICKHOUSE_TABLE_SAMPLES", consolidatedConf.tableSamples)
 
 	return consolidatedConf, nil
 }

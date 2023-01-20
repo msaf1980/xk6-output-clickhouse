@@ -30,6 +30,15 @@ USE k6
 
 Create replicated schema
 ```
+CREATE TABLE IF NOT EXISTS k6_tests (
+    id UInt64,
+    ts DateTime64(9, 'UTC'),
+    name String,
+    params String
+) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/k6_tests', '{replica}', id)
+PARTITION BY toYYYYMM(ts)
+ORDER BY (id, ts, name);
+
 CREATE TABLE IF NOT EXISTS k6_samples (
     id UInt64,
     start DateTime64(9, 'UTC'),
@@ -45,14 +54,20 @@ CREATE TABLE IF NOT EXISTS k6_samples (
 PARTITION BY toYYYYMM(start)
 ORDER BY (id, start, ts, metric, url, label, status, name);
 
-CREATE TABLE IF NOT EXISTS k6_tests (
+CREATE TABLE IF NOT EXISTS k6_thresholds
     id UInt64,
+    start DateTime64(9, 'UTC'),
     ts DateTime64(9, 'UTC'),
+    metric String,
     name String,
-    params String
-) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/k6_tests', '{replica}', id)
-PARTITION BY toYYYYMM(ts)
-ORDER BY (id, ts, name);
+    tags Map(String, String),
+    threshold String,
+    abort_on_fail Bool,
+    delay_abort_eval String,
+    last_failed boolean Bool
+) ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/k6_thresholds', '{replica}', start)
+PARTITION BY toYYYYMM(start)
+ORDER BY (id, start, ts, metric);
 ```
 
 If no tables at start, atotomatic create database and non-replicated schema, like this
@@ -60,6 +75,15 @@ If no tables at start, atotomatic create database and non-replicated schema, lik
 ```
 CREATE DATABASE IF NOT EXISTS k6
 USE k6
+
+CREATE TABLE IF NOT EXISTS k6_tests (
+    id UInt64,
+    ts DateTime64(9, 'UTC'),
+    name String,
+    params String
+) ENGINE = ReplacingMergeTree(ts)
+PARTITION BY toYYYYMM(ts)
+ORDER BY (id, ts, name);
 
 CREATE TABLE IF NOT EXISTS k6_samples (
     id UInt64,
@@ -76,14 +100,20 @@ CREATE TABLE IF NOT EXISTS k6_samples (
 PARTITION BY toYYYYMM(start)
 ORDER BY (id, start, ts, metric, url, label, status, name);
 
-CREATE TABLE IF NOT EXISTS k6_tests (
+CREATE TABLE IF NOT EXISTS k6_thresholds
     id UInt64,
+    start DateTime64(9, 'UTC'),
     ts DateTime64(9, 'UTC'),
+    metric String,
     name String,
-    params String
-) ENGINE = ReplacingMergeTree(ts)
-PARTITION BY toYYYYMM(ts)
-ORDER BY (id, ts, name);
+    tags Map(String, String),
+    threshold String,
+    abort_on_fail Bool,
+    delay_abort_eval String,
+    last_failed boolean Bool
+) ENGINE = ReplacingMergeTree(start)
+PARTITION BY toYYYYMM(start)
+ORDER BY (id, start, ts, metric);
 ```
 
 # Configuration

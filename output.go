@@ -90,6 +90,14 @@ func (o *Output) Start() error {
 	}
 
 	schema := []string{
+		`CREATE TABLE IF NOT EXISTS ` + o.Config.tableTests + ` (
+			id UInt64,
+			ts DateTime64(9, 'UTC'),
+			name String,
+			params String
+		) ENGINE = ReplacingMergeTree(ts)
+		PARTITION BY toYYYYMM(ts)
+		ORDER BY (id, ts, name);`,
 		`CREATE TABLE IF NOT EXISTS ` + o.Config.tableSamples + `(
 			id UInt64,
 			start DateTime64(9, 'UTC'),
@@ -104,14 +112,20 @@ func (o *Output) Start() error {
 		) ENGINE = ReplacingMergeTree(start)
 		PARTITION BY toYYYYMM(start)
 		ORDER BY (id, start, ts, metric, url, label, status, name);`,
-		`CREATE TABLE IF NOT EXISTS ` + o.Config.tableTests + ` (
+		`CREATE TABLE IF NOT EXISTS ` + o.Config.tableThresholds + `(
 			id UInt64,
+			start DateTime64(9, 'UTC'),
 			ts DateTime64(9, 'UTC'),
+			metric String,
 			name String,
-			params String
-		) ENGINE = ReplacingMergeTree(ts)
-		PARTITION BY toYYYYMM(ts)
-		ORDER BY (id, ts, name);`,
+			tags Map(String, String),
+			threshold String,
+			abort_on_fail Bool,
+			delay_abort_eval String,
+			last_failed boolean Bool
+		) ENGINE = ReplacingMergeTree(start)
+		PARTITION BY toYYYYMM(start)
+		ORDER BY (id, start, ts, metric);`,
 	}
 
 	for _, s := range schema {
