@@ -185,6 +185,10 @@ func (o *Output) flushMetrics() {
 			url := tags["url"]
 			label := tags["label"]
 			status := tags["status"]
+			if status == "0" {
+				// may be communication error, see https://k6.io/docs/javascript-api/error-codes/
+				status = tags["error_code"]
+			}
 			if _, err = stmt.Exec(o.Config.id, o.Config.ts, s.Time.UTC(), s.Metric.Name, url, label, status, name, tags, s.Value); err != nil {
 				o.logger.Error(err)
 				return
